@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: owner/repo@v1
+      - uses: owner/repo@v2
         with:
           config_path: config/default.yml
           github_token: ${{ secrets.GITHUB_TOKEN }}
