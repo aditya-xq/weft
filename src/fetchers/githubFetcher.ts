@@ -194,7 +194,7 @@ export async function fetchGithubMetrics(
 
     // most active hour (tie -> smallest hour)
     let mostActiveHour: number | null = null
-    let maxHourCount = -1
+    let maxHourCount = 0
     for (let h = 0; h < 24; h++) {
         if (hourlyCounts[h] > maxHourCount) {
             maxHourCount = hourlyCounts[h]
