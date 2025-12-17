@@ -20,10 +20,7 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - uses: oven/bun@v1
-      with:
-        bun-version: '1.x'
-
+    - uses: oven-sh/setup-bun@v2
     - run: bun install
       shell: bash
       working-directory: ${{ github.action_path }}
