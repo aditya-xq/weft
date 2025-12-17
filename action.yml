@@ -1,5 +1,5 @@
-name: 'daily-github-summary'
-description: 'Fetch GitHub metrics, render summary image, and publish to X/Twitter'
+name: 'Weft'
+description: 'Generate a daily GitHub activity snapshot and publish it to X'
 
 inputs:
   config_path:
@@ -26,9 +26,11 @@ runs:
 
     - run: bun install
       shell: bash
+      working-directory: ${{ github.action_path }}
 
-    - name: Run summary
+    - name: Run Weft
       shell: bash
+      working-directory: ${{ github.action_path }}
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
         X_CONSUMER_KEY: ${{ inputs.x_consumer_key }}

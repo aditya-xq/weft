@@ -71,7 +71,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: owner/weft@v2
+      - uses: aditya-xq/weft@v2
         with:
           config_path: config/default.yml
           github_token: ${{ secrets.GITHUB_TOKEN }}
