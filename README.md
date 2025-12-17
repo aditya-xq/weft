@@ -1,6 +1,6 @@
 # **Weft**
 
-[![Sample output](https://github.com/aditya-xq/weft/out/summary.svg)](https://github.com/aditya-xq/weft/out/summary.svg)
+[![Sample output](https://github.com/aditya-xq/weft/blob/main/out/summary.svg)](https://github.com/aditya-xq/weft/blob/main/out/summary.svg)
 
 ### Your daily GitHub activity → a visual story on X/Twitter
 
