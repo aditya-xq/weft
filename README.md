@@ -71,7 +71,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: aditya-xq/weft@v2
+      - uses: aditya-xq/weft@main
         with:
           config_path: config/default.yml
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -182,7 +182,7 @@ Weft is designed to be reused across repositories.
 * Safe to consume directly from GitHub
 
 ```yaml
-uses: owner/weft@v1
+uses: aditya-xq/weft@main
 ```
 
 ---
