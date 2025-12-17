@@ -1,0 +1,29 @@
+name: 'daily-github-summary'
+description: 'Fetch GitHub metrics, render summary image, and publish to X/Twitter (reusable composite action)'
+inputs:
+  config_path:
+    description: 'Path to config file'
+    required: false
+    default: 'config/default.yml'
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Setup bun
+      uses: oven/bun@v1
+      with:
+        bun-version: '1.x'
+    - name: Install dependencies (bun)
+      run: |
+        bun install
+    - name: Run summary script
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        X_CONSUMER_KEY: ${{ secrets.X_CONSUMER_KEY }}
+        X_CONSUMER_SECRET: ${{ secrets.X_CONSUMER_SECRET }}
+        X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+        X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+      run: |
+        bun run src/cli/main.ts --config "${{ inputs.config_path }}"
