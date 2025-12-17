@@ -8,9 +8,9 @@ function escapeXml(value: unknown): string {
         .replace(/'/g, '&apos;')
 }
 
-function fmt(n: number, locale = 'en-US') {
+function fmt(n: number) {
     if (!isFinite(n)) return '0'
-    try { return n.toLocaleString(locale) } catch { return String(Math.round(n)) }
+    return String(Math.round(n))
 }
 
 function getTimestamp(timezone = 'UTC'): string {
