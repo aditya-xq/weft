@@ -1,12 +1,12 @@
-# **Weft**
+[![Banner](https://github.com/aditya-xq/weft/blob/main/banner.svg)](https://github.com/aditya-xq/weft/blob/main/banner.svg)
+
+### Weft: Your daily GitHub activity → a visual story on X/Twitter
+
+**Weft** is a reusable GitHub Action + Bun-powered CLI that automatically summarizes your GitHub activity into a beautifully rendered image (as shown below) and posts it to **X/Twitter** on a schedule.
+
+Think of it as a daily developer log, woven from your commits, activity, and momentum.
 
 [![Sample output](https://github.com/aditya-xq/weft/blob/main/out/summary.svg)](https://github.com/aditya-xq/weft/blob/main/out/summary.svg)
-
-### Your daily GitHub activity → a visual story on X/Twitter
-
-**Weft** is a reusable GitHub Action + Bun-powered CLI that automatically summarizes your GitHub activity into a beautifully rendered image (as shown above) and posts it to **X/Twitter** on a schedule.
-
-Think of it as a daily developer log — woven from your commits, activity, and momentum.
 
 ---
 
