@@ -1,4 +1,4 @@
-[![Banner](https://github.com/aditya-xq/weft/blob/main/banner.svg)](https://github.com/aditya-xq/weft/blob/main/banner.svg)
+[![Banner](https://github.com/aditya-xq/weft/blob/main/assets/banner.svg)](https://github.com/aditya-xq/weft/blob/main/assets/banner.svg)
 
 ### Your daily GitHub activity → a visual story on X/Twitter
 
