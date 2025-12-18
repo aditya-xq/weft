@@ -189,7 +189,7 @@ uses: aditya-xq/weft@main
 
 ## 🧵 Why “Weft”?
 
-In weaving, **weft** is the thread drawn through the warp —
+In weaving, **weft** is the thread drawn through the warp,
 quietly forming the fabric.
 
 Weft does the same for your GitHub activity:
