@@ -35,4 +35,4 @@ runs:
         X_ACCESS_TOKEN: ${{ inputs.x_access_token }}
         X_ACCESS_SECRET: ${{ inputs.x_access_secret }}
       run: |
-        bun run src/cli/main.ts --config "${{ inputs.config_path }}"
+        bun run src/cli/main.ts --config "${{ github.workspace }}/${{ inputs.config_path }}"

@@ -118,34 +118,7 @@ Perfect for:
 
 ## ⚙️ Configuration
 
-All behavior is controlled via YAML.
-
-```yaml
-# config/default.yml
-time_window:
-  duration: "24h"
-
-github:
-  username: "aditya-xq"
-
-visual:
-  width: 1200
-  height: 675
-  theme:
-    # "Void" Theme Palette
-    background: "#020408"    # Near pitch black
-    panel: "#0b1221"         # Deep Dark Blue/Slate
-    text: "#f8fafc"          # Bright White
-    subtext: "#64748b"       # Cool Slate Grey
-    accent: "#a78bfa"        # Electric Violet
-
-twitter:
-  publish: true
-  message_template: "A snapshot of my GitHub activity in the last 24 hours. Autocrafted and published via Weft."
-
-runtime:
-  timezone: "Asia/Kolkata"
-```
+All behavior is controlled via YAML. Check the `config/default.yml` file for more details.
 
 You can:
 
