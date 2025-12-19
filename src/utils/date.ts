@@ -10,3 +10,19 @@ export function isoNowMinus(duration: string): string {
     else if (unit === 'd') millis = v * 24 * 3600 * 1000
     return new Date(now.getTime() - millis).toISOString()
 }
+
+export function getTimestamp(timezone = 'UTC'): string {
+    try {
+        const now = new Date()
+        return new Intl.DateTimeFormat('en-US', {
+            timeZone: timezone,
+            hour12: false,
+            month: 'short',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        }).format(now)
+    } catch {
+        return new Date().toISOString().split('T')[0]
+    }
+}
