@@ -8,12 +8,13 @@ visual:
   width: 1200
   height: 675
   theme:
-    # "Void" Theme Palette
-    background: "#020408"    # Near pitch black
-    panel: "#0b1221"         # Deep Dark Blue/Slate
-    text: "#f8fafc"          # Bright White
-    subtext: "#64748b"       # Cool Slate Grey
-    accent: "#a78bfa"        # Electric Violet
+    # "Midnight Pro" Theme Palette
+    background: "#0f172a"      # Slate 900 (Better than pitch black for contrast)
+    panel: "#1e293b"           # Slate 800 (Card background)
+    text: "#f8fafc"            # Slate 50 (High contrast white)
+    subtext: "#94a3b8"         # Slate 400 (Readable grey)
+    accent: "#38bdf8"          # Sky 400 (Bright Cyan/Blue)
+    border: "#334155"          # Slate 700
 
 twitter:
   publish: true
