@@ -1,10 +1,9 @@
-import { isoNowMinus } from '../utils/date'
+import { getWindowRange } from '../utils/date'
 import { info, warn } from '../utils/logger'
 import type { TimeWindow, RawMetrics } from '../types'
 
 const GITHUB_API = 'https://api.github.com/graphql'
 const GITHUB_REST = 'https://api.github.com'
-const MAX_COMMITS_TO_FETCH = 200
 const MAX_REPOS = 100 
 
 type RepoSummary = {
@@ -15,47 +14,6 @@ type RepoSummary = {
     isPrivate?: boolean
     stargazers?: number
     language?: string
-}
-
-// --- Helpers -----------------------------------------------------------------
-
-/**
- * Get the hour (0-23) of an ISO timestamp in a specific IANA timezone.
- * Uses Intl.DateTimeFormat.formatToParts when available for robust extraction.
- * Falls back to UTC hour if timezone support isn't available.
- */
-function getHourInTargetTZ(tsIso: string, timeZone: string = 'UTC'): number {
-    const d = new Date(tsIso)
-    if (isNaN(d.getTime())) return 0
-
-    // Preferred: use formatToParts to extract hour reliably (works when full-icu available)
-    try {
-        const fmt = new Intl.DateTimeFormat('en-GB', {
-            hour: '2-digit',
-            hour12: false,
-            timeZone
-        })
-        // formatToParts gives structured parts; find 'hour'
-        if (typeof (fmt as any).formatToParts === 'function') {
-            const parts = (fmt as any).formatToParts(d)
-            const hourPart = parts.find((p: any) => p.type === 'hour')
-            if (hourPart && typeof hourPart.value === 'string') {
-                const parsed = parseInt(hourPart.value, 10)
-                if (!isNaN(parsed)) return parsed
-            }
-        } else {
-            // fallback to parsing the string (format should be like "13" or "13:45:30")
-            const s = fmt.format(d)
-            const parsed = parseInt(s, 10)
-            if (!isNaN(parsed)) return parsed
-        }
-    } catch (e) {
-        // If the environment does not support the timeZone option, warn and fallback
-        warn(`getHourInTargetTZ: timezone '${timeZone}' not supported in this environment, falling back to UTC hour`, e)
-    }
-
-    // Final fallback: use UTC hour
-    return d.getUTCHours()
 }
 
 async function graphqlFetch(token: string, query: string, variables: any) {
@@ -116,15 +74,14 @@ async function withConcurrency<T>(items: T[], concurrency: number, fn: (it: T) =
 export async function fetchGithubMetrics(
     token: string,
     username: string,
-    window: TimeWindow,
-    timezone: string = 'UTC' // Default to UTC if not provided
+    window: TimeWindow
 ): Promise<RawMetrics> {
     if (!token) throw new Error('GITHUB_TOKEN is required')
+    
+    const { from, to } = getWindowRange(window.duration ?? "24h")
+    const currentHour = new Date().getUTCHours()
 
-    const from = window.from ?? isoNowMinus(window.duration ?? '24h')
-    const to = window.to ?? new Date().toISOString()
-
-    info('Querying GitHub activity', { username, from, to, timezone })
+    info('Querying GitHub activity', { username, from, to, currentHour })
 
     const gql = `
         query($login: String!, $from: DateTime!, $to: DateTime!, $maxRepos: Int!) {
@@ -145,9 +102,6 @@ export async function fetchGithubMetrics(
                             primaryLanguage { name }
                             owner { login }
                         }
-                        contributions(first: 100) {
-                            nodes { occurredAt, commitCount }
-                        }
                     }
                 }
             }
@@ -163,14 +117,11 @@ export async function fetchGithubMetrics(
     }
 
     const cc = user.contributionsCollection ?? {}
-    const commitsCount = cc.totalCommitContributions ?? 0
     const issuesCount = cc.totalIssueContributions ?? 0
     const prsCount = cc.totalPullRequestContributions ?? 0
     const reviewsCount = cc.totalPullRequestReviewContributions ?? 0
 
     const repoEntries: RepoSummary[] = []
-    const hourlyCounts = new Array(24).fill(0)
-
     const repoContributionNodes: Array<{ owner: string; name: string }> = []
     const byRepo = cc.commitContributionsByRepository ?? []
 
@@ -190,22 +141,64 @@ export async function fetchGithubMetrics(
             language: repo.primaryLanguage?.name
         })
 
-        const nodes = repoBucket.contributions?.nodes ?? []
-
-        // Calculate Hourly Distribution
-        for (const n of nodes) {
-            if (n?.occurredAt) {
-                const hour = getHourInTargetTZ(n.occurredAt, timezone)
-                // commitCount sometimes missing; default to 1 (safe)
-                const count = Number(n.commitCount ?? 1) || 1
-                hourlyCounts[hour] = (hourlyCounts[hour] ?? 0) + count
-            }
-        }
-
         repoContributionNodes.push({ owner, name: repo.name })
     }
 
-    // Determine Most Active Hour (tie-breaker: earliest hour)
+    // --- Fetch actual commit timestamps ---
+    const commitTimestamps: Date[] = []
+    let processedCommits = 0
+
+    async function fetchCommitTimestampsForRepo(owner: string, repo: string): Promise<Date[]> {
+        // Build search query for commits by this user in the time window
+        const rawQ = `repo:${owner}/${repo} author:${username} committer-date:${from}..${to}`
+        const url = `${GITHUB_REST}/search/commits?q=${encodeURIComponent(rawQ)}&per_page=100&sort=committer-date&order=desc`
+
+        const res = await restJson(token, url, 'application/vnd.github.cloak-preview+json')
+        if (!res.ok) {
+            warn(`Commit search failed for ${owner}/${repo} (status: ${res.status})`)
+            return []
+        }
+
+        const items = (res.json?.items ?? []) as any[]
+        const timestamps: Date[] = []
+        
+        for (const item of items) {
+            // Use commit.committer.date for the actual commit timestamp
+            const timestamp = item.commit?.committer?.date
+            if (timestamp) {
+                timestamps.push(new Date(timestamp))
+            }
+        }
+        
+        return timestamps
+    }
+
+    // Gather all commit timestamps concurrently
+    await withConcurrency(repoContributionNodes, 3, async (r) => {
+        try {
+            const timestamps = await fetchCommitTimestampsForRepo(r.owner, r.name)
+            for (const ts of timestamps) {
+                commitTimestamps.push(ts)
+                processedCommits++
+            }
+        } catch (e) {
+            warn(`Failed to get timestamps for ${r.owner}/${r.name}`, e)
+        }
+    })
+
+    // Calculate hourly distribution from actual commit timestamps
+    const hourlyCounts = new Array(24).fill(0)
+    
+    for (const timestamp of commitTimestamps) {
+        const hour = timestamp.getUTCHours()
+        hourlyCounts[hour] += 1
+    }
+
+    const commitsCount = commitTimestamps.length
+
+    // Determine Most Active Hour
+    // The current hour is the latest hour (inclusive)
+    // When there's a tie, prefer the earliest hour
     let mostActiveHour: number | null = null
     let maxHourCount = 0
 
@@ -222,18 +215,14 @@ export async function fetchGithubMetrics(
 
     // --- Lines changed calculation (REST) ---
     let totalLinesChanged = 0
-    let processedCommits = 0
     const commitShasToFetch: Array<{ owner: string; repo: string; sha: string }> = []
 
     async function fetchCommitShasForRepo(owner: string, repo: string): Promise<string[]> {
-        // Build search query and properly URL-encode it
-        // Use commit search Accept header (preview) to ensure commits search works
         const rawQ = `repo:${owner}/${repo} author:${username} committer-date:${from}..${to}`
         const url = `${GITHUB_REST}/search/commits?q=${encodeURIComponent(rawQ)}&per_page=20`
 
         const res = await restJson(token, url, 'application/vnd.github.cloak-preview+json')
         if (!res.ok) {
-            // If search fails (rate-limit, preview not available), warn and return empty
             warn(`Commit search failed for ${owner}/${repo} (status: ${res.status})`)
             return []
         }
@@ -242,13 +231,14 @@ export async function fetchGithubMetrics(
         return items.map(i => i.sha).filter(Boolean)
     }
 
+    // Reset processedCommits counter for lines changed calculation
+    processedCommits = 0
+
     // 1. Gather SHAs (Concurrent)
     await withConcurrency(repoContributionNodes, 3, async (r) => {
-        if (processedCommits >= MAX_COMMITS_TO_FETCH) return
         try {
             const shas = await fetchCommitShasForRepo(r.owner, r.name)
             for (const sha of shas) {
-                if (processedCommits >= MAX_COMMITS_TO_FETCH) break
                 commitShasToFetch.push({ owner: r.owner, repo: r.name, sha })
                 processedCommits++
             }
@@ -272,7 +262,6 @@ export async function fetchGithubMetrics(
                     totalLinesChanged += adds + dels
                 }
             } catch (e) {
-                // ignore single commit failures but log at debug level
                 warn(`Failed to fetch commit ${it.sha} for ${it.owner}/${it.repo}`, e)
             }
         })
@@ -284,7 +273,8 @@ export async function fetchGithubMetrics(
         issues: issuesCount,
         lines: totalLinesChanged,
         active_hour: mostActiveHour,
-        hourly_counts: hourlyCounts
+        hourly_counts: hourlyCounts,
+        current_hour: currentHour
     })
 
     return {

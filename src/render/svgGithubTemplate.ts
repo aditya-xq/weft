@@ -1,4 +1,4 @@
-import { getTimestamp } from "../utils/date"
+import { convertHourlyCountsToTimezone, findMostActiveHour, getTimestamp } from "../utils/date"
 import { escapeXml, fmt } from "../utils/generic"
 
 export function renderSVG(
@@ -27,7 +27,13 @@ export function renderSVG(
     // Data Extraction
     const commits = Number(metrics.commits_count ?? 0)
     const linesChanged = Number(metrics.lines_changed ?? 0)
-    const mostActiveHour = metrics.most_active_hour
+    
+    // Convert hourly counts from UTC to target timezone
+    const utcHourlyCounts = metrics.hourly_counts ?? new Array(24).fill(0)
+    const tzHourlyCounts = convertHourlyCountsToTimezone(utcHourlyCounts, timezone)
+    
+    // Find most active hour in the target timezone
+    const mostActiveHour = findMostActiveHour(tzHourlyCounts)
 
     // Formatting
     const commitsText = escapeXml(fmt(commits))
@@ -84,8 +90,7 @@ export function renderSVG(
         <style>
             .root { font-family: ${fontStack}; }
             .title { font-size: 28px; font-weight: 700; fill: ${text}; letter-spacing: 1px; }
-            .subtitle { font-size: 18px; font-weight: 400; fill: ${sub}; text-transform: uppercase; }
-            
+            .subtitle { font-size: 18px; font-weight: 400; fill: ${sub}; }
             .metric-val { font-size: 110px; font-weight: 900; fill: ${text}; letter-spacing: -4px; }
             .metric-lbl { font-size: 22px; font-weight: 700; fill: ${accent}; letter-spacing: 3px; }
             .metric-sub { font-size: 16px; font-weight: 400; fill: ${sub}; }
@@ -99,7 +104,7 @@ export function renderSVG(
 
     <g class="root">
         <g transform="translate(${pad}, 70)">
-            <text x="0" y="0" class="subtitle">Developer Activity Report</text>
+            <text x="0" y="0" class="subtitle">DEVELOPER ACTIVITY REPORT</text>
             <text x="0" y="45" class="title">
                 @${username} <tspan fill="${sub}" font-weight="400">/ 24h Snapshot</tspan>
             </text>
