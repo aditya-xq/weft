@@ -10,6 +10,16 @@ Think of it as a daily developer log, woven from your commits, activity, and mom
 
 ---
 
+## Quick links
+
+| Item | Link |
+|---:|:---|
+| Template repo (Use this template) | https://github.com/aditya-xq/weft-template |
+| Action repo | https://github.com/aditya-xq/weft |
+| Example output | `out/summary.png`, `out/summary.svg` |
+
+---
+
 ## ✨ What Weft Does
 
 Every run, Weft:
@@ -26,44 +36,40 @@ All of this is:
 
 ---
 
-## 🧱 Architecture Overview
+## How users can install
 
-* **CLI-first**: Core logic lives in a Bun CLI (`src/cli`)
-* **Reusable GitHub Action**: Wrapped as a composite action (`action.yml`)
-* **Config-driven**: No hardcoded behavior — everything flows from YAML
-* **Modular internals**:
-  * Fetchers → collect raw metrics
-  * Computed metrics → derive insights
-  * Renderers → produce visuals
+Two supported options.
 
----
+### Option 1: Use the template (recommended)
 
-## 🚀 Using Weft as a GitHub Action
+Use the ready-made template repository. It includes workflows, config, and auto-commit for outputs.
 
-### 1️⃣ Add secrets to your repository
+Template repo: https://github.com/aditya-xq/weft-template
 
-Weft requires the following secrets:
+Steps:
+1. Click **Use this template**
+2. Create the repository
+3. Add required secrets
+4. Enable Actions
 
-| Secret              | Description                   |
-| ------------------- | ----------------------------- |
-| `GITHUB_TOKEN`      | GitHub token (repo access)    |
-| `X_CONSUMER_KEY`    | X/Twitter API consumer key    |
-| `X_CONSUMER_SECRET` | X/Twitter API consumer secret |
-| `X_ACCESS_TOKEN`    | X/Twitter access token        |
-| `X_ACCESS_SECRET`   | X/Twitter access secret       |
+That is it. The daily workflow will run and commit output images to `out/` and publish to X/Twitter.
 
 ---
 
-### 2️⃣ Create a workflow
+### Option 2: Use the action directly
+
+Add Weft to an existing repository.
 
 ```yaml
 name: Daily GitHub Summary to X
 
 on:
   schedule:
-    # 03:30 UTC → 09:00 IST (edit as needed)
     - cron: '30 3 * * *'
   workflow_dispatch: {}
+
+permissions:
+  contents: write
 
 jobs:
   post_summary:
@@ -81,7 +87,14 @@ jobs:
           x_access_secret: ${{ secrets.X_ACCESS_SECRET }}
 ```
 
-Once enabled, Weft will automatically post your daily summary on schedule.
+Weft requires the following secrets:
+
+| Secret              | Description                   |
+| ------------------- | ----------------------------- |
+| `X_CONSUMER_KEY`    | X/Twitter API consumer key    |
+| `X_CONSUMER_SECRET` | X/Twitter API consumer secret |
+| `X_ACCESS_TOKEN`    | X/Twitter access token        |
+| `X_ACCESS_SECRET`   | X/Twitter access secret       |
 
 ---
 
