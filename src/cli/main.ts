@@ -47,7 +47,8 @@ async function main() {
         // Resolve runtime options
         // -------------------------
         const timezone = cfg.runtime?.timezone ?? 'Asia/Kolkata'
-        const outDir = 'out'
+        const workspace = process.env.GITHUB_WORKSPACE ?? process.cwd()
+        const outDir = path.join(workspace, 'out')
 
         // -------------------------
         // Auth: GitHub
