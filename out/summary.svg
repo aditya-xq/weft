@@ -2,157 +2,95 @@
 <svg xmlns="http://www.w3.org/2000/svg"
      width="1200" height="675"
      viewBox="0 0 1200 675"
+     fill="none"
      role="img"
      aria-label="Daily commit snapshot">
-    <defs>
-        
-        <pattern id="engGrid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#64748b" stroke-width="0.5" opacity="0.08"/>
-        </pattern>
     
+    <defs>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#94a3b8" stroke-width="1" opacity="0.05"/>
+        </pattern>
         
+        <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#38bdf8" />
+            <stop offset="100%" stop-color="#818cf8" />
+        </linearGradient>
+
+        <linearGradient id="cardGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#1e293b" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#1e293b" stop-opacity="0.3"/>
+        </linearGradient>
+
+        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+            <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+
         <style>
-            .root {
-                font-family: "JetBrains Mono", "Cascadia Code", "Segoe UI Mono", "Roboto Mono", "DejaVu Sans Mono", "Courier New", monospace;
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
-                text-rendering: optimizeLegibility;
-            }
-            .sharp-text {
-                paint-order: stroke fill;
-                stroke: #020408;
-                stroke-width: 0.3px;
-                stroke-linejoin: round;
-            }
-            .metric-value {
-                letter-spacing: -0.02em;
-            }
-            .label-text {
-                letter-spacing: 0.05em;
-            }
-            .title-text {
-                letter-spacing: 0.08em;
-            }
+            .root { font-family: 'JetBrains Mono', 'Cascadia Code', 'Segoe UI Mono', 'Roboto Mono', monospace; }
+            .title { font-size: 28px; font-weight: 700; fill: #f8fafc; letter-spacing: 1px; }
+            .subtitle { font-size: 18px; font-weight: 400; fill: #94a3b8; text-transform: uppercase; }
+            
+            .metric-val { font-size: 110px; font-weight: 900; fill: #f8fafc; letter-spacing: -4px; }
+            .metric-lbl { font-size: 22px; font-weight: 700; fill: #38bdf8; letter-spacing: 3px; }
+            .metric-sub { font-size: 16px; font-weight: 400; fill: #94a3b8; }
         </style>
     </defs>
 
-    <rect width="1200" height="675" fill="#020408" />
-    
-    <g class="root" transform="translate(0, 0)">
-        
-        <rect x="0" y="0" width="1200" height="675" fill="#0b1221" stroke="#1e293b" stroke-width="2" rx="4" />
-        
-        <rect width="1200" height="675" fill="url(#engGrid)" rx="4" />
+    <rect width="1200" height="675" fill="#0f172a" />
+    <rect width="1200" height="675" fill="url(#grid)" />
 
-        <rect x="0" y="0" width="1200" height="48" fill="#020408" opacity="0.5" rx="4" />
-        <line x1="0" y1="48" x2="1200" y2="48" stroke="#1e293b" stroke-width="1.5" opacity="0.8" />
-        
-        <g transform="translate(24, 24)">
-            <circle cx="0" cy="0" r="6" fill="#ef4444" opacity="0.9" /> 
-            <circle cx="22" cy="0" r="6" fill="#eab308" opacity="0.9" /> 
-            <circle cx="44" cy="0" r="6" fill="#22c55e" opacity="0.9" /> 
-        </g>
+    <rect width="1200" height="6" fill="url(#accentGradient)" />
 
-        <!-- Main Title -->
-        <text x="600" y="110" text-anchor="middle" fill="#f8fafc" font-size="28" font-weight="900" class="sharp-text">
-            <tspan fill="#64748b">[</tspan> 
-            <tspan fill="#a78bfa">LIVE</tspan> 
-            PULSE: ~/<tspan fill="#a78bfa">aditya-xq</tspan>@last_24h 
-            <tspan fill="#64748b">]</tspan>
-        </text>
-
-        <!-- Left Metric: Commits -->
-        <g transform="translate(200, 190)">
-            <text x="0" y="0" text-anchor="middle" fill="#a78bfa" font-size="24" font-weight="800" text-transform="uppercase" class="label-text" opacity="0.95">
-                BREWING CODE
-            </text>
-            <text x="0" y="85" text-anchor="middle" fill="#f8fafc" font-size="96" font-weight="900" class="sharp-text metric-value">
-                10
-            </text>
-            <text x="0" y="125" text-anchor="middle" fill="#64748b" font-size="24" font-weight="500" opacity="0.85">
-                commits pushed
-            </text>
-        </g>
-
-        <!-- Middle Metric: Lines Changed -->
-        <g transform="translate(600, 190)">
-            <text x="0" y="0" text-anchor="middle" fill="#a78bfa" font-size="24" font-weight="800" text-transform="uppercase" class="label-text" opacity="0.95">
-                SHIFTING BYTES
-            </text>
-            <text x="0" y="85" text-anchor="middle" fill="#f8fafc" font-size="96" font-weight="900" class="sharp-text metric-value">
-                1681
-            </text>
-            <text x="0" y="125" text-anchor="middle" fill="#64748b" font-size="24" font-weight="500" opacity="0.85">
-                lines changed
-            </text>
-        </g>
-
-        <!-- Right Metric: Most Active Hour -->
-        <g transform="translate(1000, 190)">
-            <text x="0" y="0" text-anchor="middle" fill="#a78bfa" font-size="24" font-weight="800" text-transform="uppercase" class="label-text" opacity="0.95">
-                PEAK FLOW
-            </text>
-            <text x="0" y="85" text-anchor="middle" fill="#f8fafc" font-size="96" font-weight="900" class="sharp-text metric-value">
-                13:00
-            </text>
-            <text x="0" y="125" text-anchor="middle" fill="#64748b" font-size="24" font-weight="500" opacity="0.85">
-                most active hour
-            </text>
-        </g>
-
-        <!-- Separator Line with gradient effect -->
-        <line x1="80" y1="380" x2="1120" y2="380" stroke="#a78bfa" stroke-width="1" opacity="0.3" />
-
-        <!-- Top Repositories Section -->
-        <text x="600" y="420" text-anchor="middle" fill="#a78bfa" font-size="26" font-weight="800" text-transform="uppercase" class="label-text" opacity="0.95">
-            ACTIVE REPOS
-        </text>
-
-        
-        <!-- Repo 1 -->
-        <g transform="translate(100, 480)">
-            <rect x="-30" y="-30" width="480" height="110" fill="#020408" opacity="0.4" rx="6" stroke="#1e293b" stroke-width="1.5" />
-            <text x="0" y="0" fill="#f8fafc" font-size="24" font-weight="800" class="sharp-text">
-                AutoProject
+    <g class="root">
+        <g transform="translate(40, 70)">
+            <text x="0" y="0" class="subtitle">Developer Activity Report</text>
+            <text x="0" y="45" class="title">
+                @aditya-xq <tspan fill="#94a3b8" font-weight="400">/ 24h Snapshot</tspan>
             </text>
             
-            <text x="0" y="28" fill="#64748b" font-size="19" font-weight="400" opacity="0.9">
-                A simple tool to automate your project
-            </text>
-            <text x="0" y="48" fill="#64748b" font-size="19" font-weight="400" opacity="0.9">
-                management using AI
-            </text>
-        </g>
-        <!-- Repo 2 -->
-        <g transform="translate(660, 480)">
-            <rect x="-30" y="-30" width="480" height="110" fill="#020408" opacity="0.4" rx="6" stroke="#1e293b" stroke-width="1.5" />
-            <text x="0" y="0" fill="#f8fafc" font-size="24" font-weight="800" class="sharp-text">
-                weft
-            </text>
-            
-            <text x="0" y="28" fill="#64748b" font-size="19" font-weight="400" opacity="0.9">
-                CLI tool with a configurable action to
-            </text>
-            <text x="0" y="48" fill="#64748b" font-size="19" font-weight="400" opacity="0.9">
-                publish your GitHub activity to X.
-            </text>
+            <circle cx="1110" cy="25" r="7" fill="#ef4444" opacity="0.8"/>
+            <circle cx="1080" cy="25" r="7" fill="#eab308" opacity="0.8"/>
+            <circle cx="1050" cy="25" r="7" fill="#22c55e" opacity="0.8"/>
         </g>
 
-        
+        <g transform="translate(40, 160)">
+            <rect width="353.3333333333333" height="435" rx="16" fill="url(#cardGradient)" stroke="#334155" stroke-width="1.5" />
+            <g transform="translate(176.66666666666666, 217.5)">
+                <text x="0" y="-20" text-anchor="middle" class="metric-val" filter="url(#glow)">35</text>
+                <text x="0" y="50" text-anchor="middle" class="metric-lbl">COMMITS</text>
+                <text x="0" y="85" text-anchor="middle" class="metric-sub">Pushed to remote</text>
+            </g>
+        </g>
 
-        <!-- Footer -->
-        <line x1="0" y1="627" x2="1200" y2="627" stroke="#1e293b" stroke-width="1.5" opacity="0.8" />
-        
-        <text x="28" y="655" fill="#64748b" font-size="18" font-weight="700" class="label-text">
-            WINDOW: <tspan fill="#f8fafc" font-weight="800">24H</tspan>
-        </text>
+        <g transform="translate(423.3333333333333, 160)">
+            <rect width="353.3333333333333" height="435" rx="16" fill="url(#cardGradient)" stroke="#334155" stroke-width="1.5" />
+            <g transform="translate(176.66666666666666, 217.5)">
+                <text x="0" y="-20" text-anchor="middle" class="metric-val" filter="url(#glow)">575</text>
+                <text x="0" y="50" text-anchor="middle" class="metric-lbl">LINES</text>
+                <text x="0" y="85" text-anchor="middle" class="metric-sub">Code churned</text>
+            </g>
+        </g>
 
-        <text x="600" y="655" text-anchor="middle" fill="#64748b" font-size="17" font-weight="500" opacity="0.75">
-            Crafted with <tspan fill="#a78bfa" font-weight="800">Weft</tspan> by xqbuilds
-        </text>
+        <g transform="translate(806.6666666666666, 160)">
+            <rect width="353.3333333333333" height="435" rx="16" fill="url(#cardGradient)" stroke="#334155" stroke-width="1.5" />
+            <g transform="translate(176.66666666666666, 217.5)">
+                <text x="0" y="-20" text-anchor="middle" class="metric-val" filter="url(#glow)">13:00</text>
+                <text x="0" y="50" text-anchor="middle" class="metric-lbl">PEAK FLOW</text>
+                <text x="0" y="85" text-anchor="middle" class="metric-sub">Most active time</text>
+            </g>
+        </g>
 
-        <text x="1172" y="655" text-anchor="end" fill="#64748b" font-size="18" font-weight="700" class="label-text">
-            LAST SYNC: <tspan fill="#f8fafc" font-weight="800">Dec 18, 02:20</tspan>
-        </text>
+        <g transform="translate(40, 635)">
+            <text x="0" y="0" fill="#94a3b8" font-size="14" font-weight="600">
+                Generated by Weft
+            </text>
+            <text x="1120" y="0" text-anchor="end" fill="#94a3b8" font-size="14" font-weight="600">
+                Snapshot: Dec 19, 15:52
+            </text>
+        </g>
     </g>
 </svg>
