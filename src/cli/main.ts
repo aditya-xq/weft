@@ -66,7 +66,6 @@ async function main() {
             githubToken,
             cfg.github.username,
             cfg.time_window ?? { duration: '24h' },
-            timezone
         )
 
         // -------------------------

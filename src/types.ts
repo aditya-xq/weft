@@ -1,4 +1,4 @@
-export type TimeWindow = { duration?: string; from?: string; to?: string }
+export type TimeWindow = { duration?: string }
 
 export type RawMetrics = Record<string, number>
 
