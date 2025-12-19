@@ -137,7 +137,7 @@ export function renderSVG(
             <g transform="translate(${metricCardW/2}, ${metricCardH/2})">
                 <text x="0" y="-20" text-anchor="middle" class="metric-val" filter="url(#glow)">${hourText}</text>
                 <text x="0" y="50" text-anchor="middle" class="metric-lbl">PEAK FLOW</text>
-                <text x="0" y="85" text-anchor="middle" class="metric-sub">Most active time</text>
+                <text x="0" y="85" text-anchor="middle" class="metric-sub">Most active hour</text>
             </g>
         </g>
 
