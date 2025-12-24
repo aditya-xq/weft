@@ -14,6 +14,7 @@ export function renderSVG(
     const timezone = svgCfg.timezone ?? 'UTC'
     const rawUsername = svgCfg.username ?? 'octocat'
     const username = escapeXml(rawUsername)
+    const duration = svgCfg.time_window.duration ?? '24h'
 
     const bg = theme.background ?? '#0f172a'
     const panel = theme.panel ?? '#1e293b'
@@ -107,7 +108,7 @@ export function renderSVG(
         <g transform="translate(${pad}, 70)">
             <text x="0" y="0" class="subtitle">DEVELOPER ACTIVITY REPORT</text>
             <text x="0" y="55" class="title">
-                @${username} <tspan fill="${sub}" font-weight="400">/ 24h Snapshot</tspan>
+                @${username} <tspan fill="${sub}" font-weight="400">/ ${duration} Snapshot</tspan>
             </text>
         </g>
 

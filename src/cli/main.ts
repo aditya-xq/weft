@@ -75,7 +75,8 @@ async function main() {
         const svgConfig = {
             ...cfg.visual,
             timezone,
-            username: cfg.github.username
+            username: cfg.github.username,
+            time_window: cfg.time_window
         }
 
         const svg = renderSVG(rawMetrics, svgConfig)
