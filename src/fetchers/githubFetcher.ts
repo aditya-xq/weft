@@ -224,8 +224,9 @@ export async function fetchGithubMetrics(
         }
     })
 
-    // Calculate interval-based distribution from actual commit timestamps
+    // Calculate BOTH interval-based and hourly distributions
     const intervalCounts = new Array(intervalCount).fill(0)
+    const hourlyCounts = new Array(24).fill(0) // Always track by hour for "most active hour"
     const fromTime = fromDate.getTime()
     const intervalMs = intervalSize * 60 * 60 * 1000 // Convert hours to milliseconds
     
@@ -233,15 +234,19 @@ export async function fetchGithubMetrics(
         const elapsedMs = timestamp.getTime() - fromTime
         const intervalIndex = Math.floor(elapsedMs / intervalMs)
         
-        // Ensure the interval is within bounds
+        // Track in intervals for interval-based metrics
         if (intervalIndex >= 0 && intervalIndex < intervalCount) {
             intervalCounts[intervalIndex] += 1
         }
+        
+        // Always track by UTC hour for "most active hour" calculation
+        const utcHour = timestamp.getUTCHours()
+        hourlyCounts[utcHour] += 1
     }
 
     const commitsCount = commitTimestamps.length
 
-    // Determine Most Active Interval
+    // Determine Most Active Interval (for interval-based reporting)
     let mostActiveInterval: number | null = null
     let maxIntervalCount = 0
 
@@ -253,14 +258,22 @@ export async function fetchGithubMetrics(
         }
     }
 
-    // If there were no commits, keep mostActiveInterval null
     if (maxIntervalCount === 0) mostActiveInterval = null
 
-    // Convert most active interval to hour (for backward compatibility)
-    // This represents the starting hour of the most active interval
-    const mostActiveHour = mostActiveInterval !== null 
-        ? (mostActiveInterval * intervalSize) % 24 
-        : null
+    // Determine Most Active Hour (always based on 24-hour UTC distribution)
+    // When there's a tie, prefer the earliest hour
+    let mostActiveHour: number | null = null
+    let maxHourCount = 0
+
+    for (let h = 0; h < 24; h++) {
+        const c = hourlyCounts[h] ?? 0
+        if (c > maxHourCount) {
+            maxHourCount = c
+            mostActiveHour = h
+        }
+    }
+
+    if (maxHourCount === 0) mostActiveHour = null
 
     // --- Lines changed calculation (REST) ---
     let totalLinesChanged = 0
@@ -321,7 +334,9 @@ export async function fetchGithubMetrics(
         most_active_hour: mostActiveHour,
         most_active_interval: mostActiveInterval,
         interval_counts: intervalCounts,
-        interval_size: intervalSize
+        hourly_counts: hourlyCounts,
+        interval_size: intervalSize,
+        window_hours: windowHours
     })
 
     return {
@@ -331,8 +346,10 @@ export async function fetchGithubMetrics(
         reviews_count: reviewsCount,
         repos: repoEntries,
         lines_changed: totalLinesChanged,
-        most_active_hour: mostActiveHour,
-        hourly_counts: intervalCounts,
+        most_active_hour: mostActiveHour, // UTC hour (0-23) with most commits
+        most_active_interval: mostActiveInterval, // Most active interval index
+        hourly_counts: hourlyCounts, // 24-hour UTC distribution
+        interval_counts: intervalCounts, // Distribution by intervals
         interval_size: intervalSize
     } as unknown as RawMetrics
 }
@@ -346,7 +363,9 @@ function emptyMetrics(intervalCount: number = 24): RawMetrics {
         reviews_count: 0,
         repos: [],
         most_active_hour: null,
-        hourly_counts: new Array(intervalCount).fill(0),
+        most_active_interval: null,
+        hourly_counts: new Array(24).fill(0),
+        interval_counts: new Array(intervalCount).fill(0),
         interval_size: 1
     } as unknown as RawMetrics
 }
