@@ -4,7 +4,7 @@ import type { TimeWindow, RawMetrics } from '../types'
 
 const GITHUB_API = 'https://api.github.com/graphql'
 const GITHUB_REST = 'https://api.github.com'
-const MAX_REPOS = 100 
+const MAX_REPOS = 100
 
 type RepoSummary = {
     owner: string
@@ -69,6 +69,28 @@ async function withConcurrency<T>(items: T[], concurrency: number, fn: (it: T) =
     await Promise.all(workers)
 }
 
+/**
+ * Calculate the appropriate interval size based on time window duration
+ * @param windowHours - Duration of the time window in hours
+ * @returns Interval size in hours
+ */
+function calculateIntervalSize(windowHours: number): number {
+    if (windowHours <= 24) return 1      // 1-hour intervals for 24h or less
+    if (windowHours <= 48) return 2      // 2-hour intervals for 48h
+    if (windowHours <= 72) return 3      // 3-hour intervals for 72h
+    return Math.ceil(windowHours / 24)   // Scale proportionally for longer periods
+}
+
+/**
+ * Calculate the number of intervals based on window duration
+ * @param windowHours - Duration of the time window in hours
+ * @param intervalSize - Size of each interval in hours
+ * @returns Number of intervals
+ */
+function calculateIntervalCount(windowHours: number, intervalSize: number): number {
+    return Math.ceil(windowHours / intervalSize)
+}
+
 // --- Public function ---------------------------------------------------------
 
 export async function fetchGithubMetrics(
@@ -79,10 +101,20 @@ export async function fetchGithubMetrics(
     if (!token) throw new Error('GITHUB_TOKEN is required')
     
     const { from, to } = getWindowRange(window.duration ?? "24h")
-    const currentHour = new Date().getUTCHours()
+    const windowHours = parseInt((window.duration ?? "24h").replace('h', '')) || 24
+    const intervalSize = calculateIntervalSize(windowHours)
+    const intervalCount = calculateIntervalCount(windowHours, intervalSize)
 
-    info('Querying GitHub activity', { username, from, to, currentHour })
+    info('Querying GitHub activity', { 
+        username, 
+        from, 
+        to, 
+        windowHours, 
+        intervalSize,
+        intervalCount 
+    })
 
+    // Query GraphQL for contributions and repository information
     const gql = `
         query($login: String!, $from: DateTime!, $to: DateTime!, $maxRepos: Int!) {
             user(login: $login) {
@@ -102,6 +134,9 @@ export async function fetchGithubMetrics(
                             primaryLanguage { name }
                             owner { login }
                         }
+                        contributions {
+                            totalCount
+                        }
                     }
                 }
             }
@@ -113,7 +148,7 @@ export async function fetchGithubMetrics(
 
     if (!user) {
         warn('No user data returned; returning zeros')
-        return emptyMetrics()
+        return emptyMetrics(intervalCount)
     }
 
     const cc = user.contributionsCollection ?? {}
@@ -144,14 +179,16 @@ export async function fetchGithubMetrics(
         repoContributionNodes.push({ owner, name: repo.name })
     }
 
-    // --- Fetch actual commit timestamps ---
+    // --- Fetch actual commit timestamps from ALL repos (public and private) ---
     const commitTimestamps: Date[] = []
-    let processedCommits = 0
+    const fromDate = new Date(from)
+    const toDate = new Date(to)
 
     async function fetchCommitTimestampsForRepo(owner: string, repo: string): Promise<Date[]> {
-        // Build search query for commits by this user in the time window
-        const rawQ = `repo:${owner}/${repo} author:${username} committer-date:${from}..${to}`
-        const url = `${GITHUB_REST}/search/commits?q=${encodeURIComponent(rawQ)}&per_page=100&sort=committer-date&order=desc`
+        // Use author-date instead of committer-date to track when commits were originally created
+        // This is more accurate for the user's actual activity
+        const rawQ = `repo:${owner}/${repo} author:${username} author-date:${from}..${to}`
+        const url = `${GITHUB_REST}/search/commits?q=${encodeURIComponent(rawQ)}&per_page=100&sort=author-date&order=desc`
 
         const res = await restJson(token, url, 'application/vnd.github.cloak-preview+json')
         if (!res.ok) {
@@ -163,10 +200,14 @@ export async function fetchGithubMetrics(
         const timestamps: Date[] = []
         
         for (const item of items) {
-            // Use commit.committer.date for the actual commit timestamp
-            const timestamp = item.commit?.committer?.date
+            // Use commit.author.date for the actual authoring timestamp
+            const timestamp = item.commit?.author?.date
             if (timestamp) {
-                timestamps.push(new Date(timestamp))
+                const commitDate = new Date(timestamp)
+                // Double-check the timestamp is within our window (API sometimes returns extra results)
+                if (commitDate >= fromDate && commitDate <= toDate) {
+                    timestamps.push(commitDate)
+                }
             }
         }
         
@@ -177,49 +218,57 @@ export async function fetchGithubMetrics(
     await withConcurrency(repoContributionNodes, 3, async (r) => {
         try {
             const timestamps = await fetchCommitTimestampsForRepo(r.owner, r.name)
-            for (const ts of timestamps) {
-                commitTimestamps.push(ts)
-                processedCommits++
-            }
+            commitTimestamps.push(...timestamps)
         } catch (e) {
             warn(`Failed to get timestamps for ${r.owner}/${r.name}`, e)
         }
     })
 
-    // Calculate hourly distribution from actual commit timestamps
-    const hourlyCounts = new Array(24).fill(0)
+    // Calculate interval-based distribution from actual commit timestamps
+    const intervalCounts = new Array(intervalCount).fill(0)
+    const fromTime = fromDate.getTime()
+    const intervalMs = intervalSize * 60 * 60 * 1000 // Convert hours to milliseconds
     
     for (const timestamp of commitTimestamps) {
-        const hour = timestamp.getUTCHours()
-        hourlyCounts[hour] += 1
+        const elapsedMs = timestamp.getTime() - fromTime
+        const intervalIndex = Math.floor(elapsedMs / intervalMs)
+        
+        // Ensure the interval is within bounds
+        if (intervalIndex >= 0 && intervalIndex < intervalCount) {
+            intervalCounts[intervalIndex] += 1
+        }
     }
 
     const commitsCount = commitTimestamps.length
 
-    // Determine Most Active Hour
-    // The current hour is the latest hour (inclusive)
-    // When there's a tie, prefer the earliest hour
-    let mostActiveHour: number | null = null
-    let maxHourCount = 0
+    // Determine Most Active Interval
+    let mostActiveInterval: number | null = null
+    let maxIntervalCount = 0
 
-    for (let h = 0; h < 24; h++) {
-        const c = hourlyCounts[h] ?? 0
-        if (c > maxHourCount) {
-            maxHourCount = c
-            mostActiveHour = h
+    for (let i = 0; i < intervalCount; i++) {
+        const c = intervalCounts[i] ?? 0
+        if (c > maxIntervalCount) {
+            maxIntervalCount = c
+            mostActiveInterval = i
         }
     }
 
-    // If there were no commits, keep mostActiveHour null
-    if (maxHourCount === 0) mostActiveHour = null
+    // If there were no commits, keep mostActiveInterval null
+    if (maxIntervalCount === 0) mostActiveInterval = null
+
+    // Convert most active interval to hour (for backward compatibility)
+    // This represents the starting hour of the most active interval
+    const mostActiveHour = mostActiveInterval !== null 
+        ? (mostActiveInterval * intervalSize) % 24 
+        : null
 
     // --- Lines changed calculation (REST) ---
     let totalLinesChanged = 0
     const commitShasToFetch: Array<{ owner: string; repo: string; sha: string }> = []
 
     async function fetchCommitShasForRepo(owner: string, repo: string): Promise<string[]> {
-        const rawQ = `repo:${owner}/${repo} author:${username} committer-date:${from}..${to}`
-        const url = `${GITHUB_REST}/search/commits?q=${encodeURIComponent(rawQ)}&per_page=20`
+        const rawQ = `repo:${owner}/${repo} author:${username} author-date:${from}..${to}`
+        const url = `${GITHUB_REST}/search/commits?q=${encodeURIComponent(rawQ)}&per_page=100`
 
         const res = await restJson(token, url, 'application/vnd.github.cloak-preview+json')
         if (!res.ok) {
@@ -231,16 +280,12 @@ export async function fetchGithubMetrics(
         return items.map(i => i.sha).filter(Boolean)
     }
 
-    // Reset processedCommits counter for lines changed calculation
-    processedCommits = 0
-
     // 1. Gather SHAs (Concurrent)
     await withConcurrency(repoContributionNodes, 3, async (r) => {
         try {
             const shas = await fetchCommitShasForRepo(r.owner, r.name)
             for (const sha of shas) {
                 commitShasToFetch.push({ owner: r.owner, repo: r.name, sha })
-                processedCommits++
             }
         } catch (e) {
             warn(`Failed to get SHAs for ${r.owner}/${r.name}`, e)
@@ -271,10 +316,12 @@ export async function fetchGithubMetrics(
         commits: commitsCount,
         prs: prsCount,
         issues: issuesCount,
+        reviews: reviewsCount,
         lines: totalLinesChanged,
-        active_hour: mostActiveHour,
-        hourly_counts: hourlyCounts,
-        current_hour: currentHour
+        most_active_hour: mostActiveHour,
+        most_active_interval: mostActiveInterval,
+        interval_counts: intervalCounts,
+        interval_size: intervalSize
     })
 
     return {
@@ -285,11 +332,12 @@ export async function fetchGithubMetrics(
         repos: repoEntries,
         lines_changed: totalLinesChanged,
         most_active_hour: mostActiveHour,
-        hourly_counts: hourlyCounts
+        hourly_counts: intervalCounts,
+        interval_size: intervalSize
     } as unknown as RawMetrics
 }
 
-function emptyMetrics(): RawMetrics {
+function emptyMetrics(intervalCount: number = 24): RawMetrics {
     return {
         commits_count: 0,
         lines_changed: 0,
@@ -298,6 +346,7 @@ function emptyMetrics(): RawMetrics {
         reviews_count: 0,
         repos: [],
         most_active_hour: null,
-        hourly_counts: new Array(24).fill(0)
+        hourly_counts: new Array(intervalCount).fill(0),
+        interval_size: 1
     } as unknown as RawMetrics
 }
