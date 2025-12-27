@@ -112,10 +112,10 @@ async function main() {
         }
 
         // -------------------------
-        // Publish to X (optional)
+        // Publish to X (optional) - Config driven or when no commits are done in the last 24h
         // -------------------------
-        if (!cfg.twitter?.publish) {
-            info('Publishing disabled in config')
+        if (!cfg.twitter?.publish || rawMetrics.commits_count === 0) {
+            info('Publishing disabled in config or no commits in the last 24h')
             return
         }
 
